@@ -49,6 +49,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToolBar;
@@ -91,6 +92,8 @@ class TableFilterColumnPopup extends PopupWindow implements MouseListener {
     private boolean actionsVisible = true;
     private boolean useTableRenderers = false;
     ResourceBundle bundle = ResourceBundle.getBundle("task-dialog"); // NOI18N
+
+    private Dimension currentlyPreferedSize;
 
     public TableFilterColumnPopup(ITableFilter<?> filter) {
 
@@ -166,10 +169,12 @@ class TableFilterColumnPopup extends PopupWindow implements MouseListener {
     @SuppressWarnings("serial")
     @Override
     protected JComponent buildContent() {
-
-	JPanel owner = new JPanel(new BorderLayout(3, 3));
+	JPanel owner = new JPanel(new BorderLayout(3, 3)) {
+	    public Dimension getPreferredSize() {
+		return getContentPreferedSize();
+	    }
+	};
 	owner.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
-	owner.setPreferredSize(new Dimension(250, 150)); // default popup size
 
 	Box commands = new Box(BoxLayout.LINE_AXIS);
 
@@ -207,6 +212,43 @@ class TableFilterColumnPopup extends PopupWindow implements MouseListener {
 
 	return owner;
 
+    }
+
+    @SuppressWarnings("unchecked")
+    private Dimension getContentPreferedSize() {
+	Dimension dim = currentlyPreferedSize == null ? new Dimension(250, 150) // default popup size
+		: currentlyPreferedSize;
+
+	@SuppressWarnings("rawtypes")
+	JList list = filterList.getList();
+
+	int maxWidth = 0;
+	int heightOverall = 0;
+
+	// Search the longest entry
+	for (int i = 0; i < list.getModel().getSize(); i++) {
+	    Dimension colDim = list.getCellRenderer()
+		    .getListCellRendererComponent(list, list.getModel().getElementAt(i), i, false, false)
+		    .getPreferredSize();
+
+	    maxWidth = Math.max(maxWidth, colDim.width);
+
+	    heightOverall += colDim.height;
+	}
+
+	if (maxWidth > dim.width) {
+	    dim.width = maxWidth + 5;
+	}
+
+	if (heightOverall > dim.height) {
+	    if (heightOverall > 250) {
+		heightOverall = 250; // max heigth
+	    }
+
+	    dim.height = heightOverall;
+	}
+
+	return dim;
     }
 
     private boolean applyColumnFilter() {
@@ -274,7 +316,7 @@ class TableFilterColumnPopup extends PopupWindow implements MouseListener {
 
 	// restore popup's size for the column
 	mColumnIndex = filter.getTable().convertColumnIndexToModel(vColumnIndex);
-	setPreferredSize(getColumnAttrs(vColumnIndex).preferredSize);
+	currentlyPreferedSize = getColumnAttrs(vColumnIndex).preferredSize;
 
 	Collection<DistinctColumnItem> distinctItems = filter.getDistinctColumnItems(mColumnIndex);
 

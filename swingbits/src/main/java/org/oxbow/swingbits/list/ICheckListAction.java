@@ -2,8 +2,11 @@ package org.oxbow.swingbits.list;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.ResourceBundle;
 
 public interface ICheckListAction<T> {
+
+    ResourceBundle BUNDLE = ResourceBundle.getBundle("task-dialog");
 
     void check(ICheckListModel<T> model, boolean value);
 
@@ -11,7 +14,7 @@ public interface ICheckListAction<T> {
 
 	@Override
 	public String toString() {
-	    return "(All)";
+	    return BUNDLE.getString("Show_All_Columns");
 	}
 
 	@SuppressWarnings("unchecked")
