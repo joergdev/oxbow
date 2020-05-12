@@ -29,7 +29,6 @@
  *
  */
 
-
 package org.oxbow.swingbits.table.filter;
 
 import java.awt.BorderLayout;
@@ -73,253 +72,266 @@ import org.oxbow.swingbits.util.IObjectToStringTranslator;
 
 class TableFilterColumnPopup extends PopupWindow implements MouseListener {
 
-        static class ColumnAttrs {
-            public Dimension preferredSize;
-        }
+    static class ColumnAttrs {
+	public Dimension preferredSize;
+    }
 
-        private boolean enabled = false;
+    private boolean enabled = false;
 
-        private final CheckList<DistinctColumnItem> filterList = new CheckList.Builder().build();
-        private final JSearchTextField searchField = new JSearchTextField();
+    private final CheckList<DistinctColumnItem> filterList = new CheckList.Builder().build();
+    private final JSearchTextField searchField = new JSearchTextField();
 
-        private final Map<Integer, ColumnAttrs> colAttrs = new HashMap<Integer, ColumnAttrs>();
-        private int mColumnIndex = -1;
-        
-        private final ITableFilter<?> filter;
-        private boolean searchable;
-        private IListFilter searchFilter = CheckListFilterType.CONTAINS;
-        private IObjectToStringTranslator translator;
-        private boolean actionsVisible = true;
-        private boolean useTableRenderers = false;
-        ResourceBundle bundle = ResourceBundle.getBundle( "task-dialog" ); // NOI18N
+    private final Map<Integer, ColumnAttrs> colAttrs = new HashMap<Integer, ColumnAttrs>();
+    private int mColumnIndex = -1;
 
-        public TableFilterColumnPopup( ITableFilter<?> filter ) {
+    private final ITableFilter<?> filter;
+    private boolean searchable;
+    private IListFilter searchFilter = CheckListFilterType.CONTAINS;
+    private IObjectToStringTranslator translator;
+    private boolean actionsVisible = true;
+    private boolean useTableRenderers = false;
+    ResourceBundle bundle = ResourceBundle.getBundle("task-dialog"); // NOI18N
 
-            super( true );
+    public TableFilterColumnPopup(ITableFilter<?> filter) {
 
-            this.filter = filter;
-            filterList.getList().setVisibleRowCount(8);
+	super(true);
 
-            setupTableHeader();
-            filter.getTable().addPropertyChangeListener( "tableHeader", new PropertyChangeListener() {
-                public void propertyChange(PropertyChangeEvent evt) {
-                    setupTableHeader();
-                }}
-            );
-            filter.getTable().addPropertyChangeListener( "model", new PropertyChangeListener() {
-                public void propertyChange(PropertyChangeEvent evt) {
-                    colAttrs.clear();
-                }}
-            );
-            
-            searchField.getDocument().addDocumentListener( new DocumentListener() {
-                
-                @Override
-                public void removeUpdate(DocumentEvent e) { perform(e); }
-                
-                @Override
-                public void insertUpdate(DocumentEvent e) { perform(e); }
-                
-                @Override
-                public void changedUpdate(DocumentEvent e) { perform(e);}
-                
-                private void perform(DocumentEvent e) {
-                    filterList.filter(searchField.getText(), translator, searchFilter);
-                }
-                
-            });
+	this.filter = filter;
+	filterList.getList().setVisibleRowCount(8);
 
-        }
-        
-        public void setSearchable( boolean searchable ) {
-            this.searchable = searchable;
-        }
-        
-        public void setSearchTranslator( IObjectToStringTranslator tranlsator ) {
-            this.translator = tranlsator;
-        }
+	setupTableHeader();
+	filter.getTable().addPropertyChangeListener("tableHeader", new PropertyChangeListener() {
+	    public void propertyChange(PropertyChangeEvent evt) {
+		setupTableHeader();
+	    }
+	});
+	filter.getTable().addPropertyChangeListener("model", new PropertyChangeListener() {
+	    public void propertyChange(PropertyChangeEvent evt) {
+		colAttrs.clear();
+	    }
+	});
 
-        public void setSearchFilter(IListFilter searchFilter) {
-            this.searchFilter = searchFilter;
-        }
-        
-        public void setActionsVisible(boolean actionsVisible) {
-            this.actionsVisible = actionsVisible;
-        }
-        
-        public void setUseTableRenderers(boolean reuseRenderers) {
-            this.useTableRenderers = reuseRenderers;
-        }
+	searchField.getDocument().addDocumentListener(new DocumentListener() {
 
-        private void setupTableHeader() {
-            JTableHeader header = filter.getTable().getTableHeader();
-            if ( header != null ) header.addMouseListener( this );
-        }
+	    @Override
+	    public void removeUpdate(DocumentEvent e) {
+		perform(e);
+	    }
 
+	    @Override
+	    public void insertUpdate(DocumentEvent e) {
+		perform(e);
+	    }
 
-        @SuppressWarnings("serial")
-        @Override
-        protected JComponent buildContent() {
+	    @Override
+	    public void changedUpdate(DocumentEvent e) {
+		perform(e);
+	    }
 
-            JPanel owner = new JPanel( new BorderLayout(3,3) );
-            owner.setBorder( BorderFactory.createEmptyBorder(1, 1, 1, 1));
-            owner.setPreferredSize(new Dimension(250, 150)); // default popup size
+	    private void perform(DocumentEvent e) {
+		filterList.filter(searchField.getText(), translator, searchFilter);
+	    }
 
-            Box commands = new Box(BoxLayout.LINE_AXIS);
-            
-            JToolBar toolbar = new JToolBar();
-            toolbar.setFloatable(false);
-            toolbar.setOpaque(false);
-            toolbar.add( new PopupWindow.CommandAction(
-                    bundle.getString( "Clear_ALL_COLUMN_FILTERS" ),
-                    new ImageIcon(getClass().getResource("funnel_delete.png"))) {
-                @Override
-                protected boolean perform() {
-                    return clearAllFilters();
-                }
-            });
-            commands.add( toolbar );
-            
-            commands.add(Box.createHorizontalGlue());
-            
-            commands.add( new JButton( new PopupWindow.CommandAction(bundle.getString("Apply")){
-                @Override
-                protected boolean perform() {
-                    return applyColumnFilter();
-                }})
-             );
-            commands.add( Box.createHorizontalStrut(5) );
-            commands.add( new JButton( new PopupWindow.CommandAction(bundle.getString("Cancel"))));
-            commands.setBorder( BorderFactory.createEmptyBorder(3, 0, 3, 0));
-            commands.setBackground(UIManager.getColor("Panel.background"));
-            commands.setOpaque(true);
-
-            if ( searchable) {
-                owner.add( searchField, BorderLayout.NORTH );
-            }
-            owner.add( new JScrollPane( filterList.getList() ), BorderLayout.CENTER );
-            owner.add( commands, BorderLayout.SOUTH );
-
-            return owner;
-
-        }
-        
-        private boolean applyColumnFilter() {
-            Collection<DistinctColumnItem> checked = filterList.getCheckedItems();
-            ICheckListModel<DistinctColumnItem> model = filterList.getModel(); 
-            model.filter("", translator, CheckListFilterType.CONTAINS); // clear filter to get true results
-            filter.apply(mColumnIndex, checked);
-            return true;
-        }
-        
-        private boolean clearAllFilters() {
-            filter.clear();
-            return true;
-        }
-
-        public boolean isEnabled() {
-            return enabled;
-        }
-
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
-
-        // Popup menus are triggered differently on different platforms
-        // Therefore, isPopupTrigger should be checked in both mousePressed and mouseReleased
-        // events for for proper cross-platform functionality
-        
-        @Override
-        public void mousePressed(MouseEvent e) {
-            if ( enabled && e.isPopupTrigger() ) showFilterPopup(e);
-        }
-
-        @Override
-        public void mouseReleased(MouseEvent e) {
-            if ( enabled && e.isPopupTrigger() ) showFilterPopup(e);
-        }
-
-        private void showFilterPopup(MouseEvent e) {
-            JTableHeader header = (JTableHeader)(e.getSource());
-            TableColumnModel colModel = filter.getTable().getColumnModel();
-
-            // The index of the column whose header was clicked
-            int vColumnIndex = colModel.getColumnIndexAtX(e.getX());
-            if ( vColumnIndex < 0 ) return;
-
-
-            // Determine if mouse was clicked between column heads
-            Rectangle headerRect = filter.getTable().getTableHeader().getHeaderRect(vColumnIndex);
-            if (vColumnIndex == 0) {
-                headerRect.width -= 2;
-            } else {
-                headerRect.grow(-2, 0);
-            }
-
-            // Mouse was clicked between column heads
-            if (!headerRect.contains(e.getX(), e.getY())) return;
-
-            // restore popup's size for the column
-            mColumnIndex = filter.getTable().convertColumnIndexToModel(vColumnIndex);
-            setPreferredSize( getColumnAttrs(vColumnIndex).preferredSize );
-
-            Collection<DistinctColumnItem> distinctItems = filter.getDistinctColumnItems(mColumnIndex);
-
-            DefaultCheckListModel<DistinctColumnItem> model = new DefaultCheckListModel<DistinctColumnItem>(distinctItems);
-            filterList.setModel( actionsVisible? new ActionCheckListModel<DistinctColumnItem>( model): model);
-            Collection<DistinctColumnItem> checked = filter.getFilterState(mColumnIndex);
-            
-            // replace empty checked items with full selection
-            filterList.setCheckedItems( CollectionUtils.isEmpty(checked)? distinctItems: checked);
-
-            if ( useTableRenderers ) {
-                filterList.getList().setCellRenderer( new TableAwareCheckListRenderer( filter.getTable(), vColumnIndex) );
-            }
-            
-            // show pop-up
-            show( header, headerRect.x, header.getHeight() );
-        }
-
-        private ColumnAttrs getColumnAttrs( int column ) {
-            ColumnAttrs attrs = colAttrs.get(column);
-            if ( attrs == null ) {
-                attrs = new ColumnAttrs();
-                colAttrs.put( column, attrs);
-            }
-
-            return attrs;
-        }
-
-        
-        @Override
-        protected void beforeShow() {
-            if ( searchable ) {
-                SwingUtilities.invokeLater( new Runnable() {
-                    @Override
-                    public void run() {
-                        searchField.setText("");
-                        searchField.requestFocusInWindow();
-                    }
-                });
-            }
-        }
-        
-        @Override
-        public void beforeHide() {
-            // save pop-up's dimensions before pop-up becomes hidden
-            getColumnAttrs(mColumnIndex).preferredSize = getPreferredSize();
-        }
-
-
-        @Override
-        public void mouseClicked(MouseEvent e) {}
-
-        @Override
-        public void mouseEntered(MouseEvent e) {}
-
-        @Override
-        public void mouseExited(MouseEvent e) {}
-
+	});
 
     }
 
+    public void setSearchable(boolean searchable) {
+	this.searchable = searchable;
+    }
+
+    public void setSearchTranslator(IObjectToStringTranslator tranlsator) {
+	this.translator = tranlsator;
+    }
+
+    public void setSearchFilter(IListFilter searchFilter) {
+	this.searchFilter = searchFilter;
+    }
+
+    public void setActionsVisible(boolean actionsVisible) {
+	this.actionsVisible = actionsVisible;
+    }
+
+    public void setUseTableRenderers(boolean reuseRenderers) {
+	this.useTableRenderers = reuseRenderers;
+    }
+
+    private void setupTableHeader() {
+	JTableHeader header = filter.getTable().getTableHeader();
+	if (header != null) {
+	    header.addMouseListener(this);
+	}
+    }
+
+    @SuppressWarnings("serial")
+    @Override
+    protected JComponent buildContent() {
+
+	JPanel owner = new JPanel(new BorderLayout(3, 3));
+	owner.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
+	owner.setPreferredSize(new Dimension(250, 150)); // default popup size
+
+	Box commands = new Box(BoxLayout.LINE_AXIS);
+
+	JToolBar toolbar = new JToolBar();
+	toolbar.setFloatable(false);
+	toolbar.setOpaque(false);
+	toolbar.add(new PopupWindow.CommandAction(bundle.getString("Clear_ALL_COLUMN_FILTERS"),
+		new ImageIcon(getClass().getResource("funnel_delete.png"))) {
+	    @Override
+	    protected boolean perform() {
+		return clearAllFilters();
+	    }
+	});
+	commands.add(toolbar);
+
+	commands.add(Box.createHorizontalGlue());
+
+	commands.add(new JButton(new PopupWindow.CommandAction(bundle.getString("Apply")) {
+	    @Override
+	    protected boolean perform() {
+		return applyColumnFilter();
+	    }
+	}));
+	commands.add(Box.createHorizontalStrut(5));
+	commands.add(new JButton(new PopupWindow.CommandAction(bundle.getString("Cancel"))));
+	commands.setBorder(BorderFactory.createEmptyBorder(3, 0, 3, 0));
+	commands.setBackground(UIManager.getColor("Panel.background"));
+	commands.setOpaque(true);
+
+	if (searchable) {
+	    owner.add(searchField, BorderLayout.NORTH);
+	}
+	owner.add(new JScrollPane(filterList.getList()), BorderLayout.CENTER);
+	owner.add(commands, BorderLayout.SOUTH);
+
+	return owner;
+
+    }
+
+    private boolean applyColumnFilter() {
+	Collection<DistinctColumnItem> checked = filterList.getCheckedItems();
+	ICheckListModel<DistinctColumnItem> model = filterList.getModel();
+	model.filter("", translator, CheckListFilterType.CONTAINS); // clear filter to get true results
+	filter.apply(mColumnIndex, checked);
+	return true;
+    }
+
+    private boolean clearAllFilters() {
+	filter.clear();
+	return true;
+    }
+
+    public boolean isEnabled() {
+	return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+	this.enabled = enabled;
+    }
+
+    // Popup menus are triggered differently on different platforms
+    // Therefore, isPopupTrigger should be checked in both mousePressed and
+    // mouseReleased
+    // events for for proper cross-platform functionality
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+	if (enabled && e.isPopupTrigger()) {
+	    showFilterPopup(e);
+	}
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+	if (enabled && e.isPopupTrigger()) {
+	    showFilterPopup(e);
+	}
+    }
+
+    private void showFilterPopup(MouseEvent e) {
+	JTableHeader header = (JTableHeader) (e.getSource());
+	TableColumnModel colModel = filter.getTable().getColumnModel();
+
+	// The index of the column whose header was clicked
+	int vColumnIndex = colModel.getColumnIndexAtX(e.getX());
+	if (vColumnIndex < 0) {
+	    return;
+	}
+
+	// Determine if mouse was clicked between column heads
+	Rectangle headerRect = filter.getTable().getTableHeader().getHeaderRect(vColumnIndex);
+	if (vColumnIndex == 0) {
+	    headerRect.width -= 2;
+	} else {
+	    headerRect.grow(-2, 0);
+	}
+
+	// Mouse was clicked between column heads
+	if (!headerRect.contains(e.getX(), e.getY())) {
+	    return;
+	}
+
+	// restore popup's size for the column
+	mColumnIndex = filter.getTable().convertColumnIndexToModel(vColumnIndex);
+	setPreferredSize(getColumnAttrs(vColumnIndex).preferredSize);
+
+	Collection<DistinctColumnItem> distinctItems = filter.getDistinctColumnItems(mColumnIndex);
+
+	DefaultCheckListModel<DistinctColumnItem> model = new DefaultCheckListModel<DistinctColumnItem>(distinctItems);
+	filterList.setModel(actionsVisible ? new ActionCheckListModel<DistinctColumnItem>(model) : model);
+	Collection<DistinctColumnItem> checked = filter.getFilterState(mColumnIndex);
+
+	// replace empty checked items with full selection
+	filterList.setCheckedItems(CollectionUtils.isEmpty(checked) ? distinctItems : checked);
+
+	if (useTableRenderers) {
+	    filterList.getList().setCellRenderer(new TableAwareCheckListRenderer(filter.getTable(), vColumnIndex));
+	}
+
+	// show pop-up
+	show(header, headerRect.x, header.getHeight());
+    }
+
+    private ColumnAttrs getColumnAttrs(int column) {
+	ColumnAttrs attrs = colAttrs.get(column);
+	if (attrs == null) {
+	    attrs = new ColumnAttrs();
+	    colAttrs.put(column, attrs);
+	}
+
+	return attrs;
+    }
+
+    @Override
+    protected void beforeShow() {
+	if (searchable) {
+	    SwingUtilities.invokeLater(new Runnable() {
+		@Override
+		public void run() {
+		    searchField.setText("");
+		    searchField.requestFocusInWindow();
+		}
+	    });
+	}
+    }
+
+    @Override
+    public void beforeHide() {
+	// save pop-up's dimensions before pop-up becomes hidden
+	getColumnAttrs(mColumnIndex).preferredSize = getPreferredSize();
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+    }
+
+}
