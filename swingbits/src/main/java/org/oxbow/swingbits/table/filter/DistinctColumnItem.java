@@ -38,19 +38,13 @@ import org.oxbow.swingbits.util.IValueWrapper;
 public class DistinctColumnItem implements Comparable<DistinctColumnItem>, IValueWrapper<Object> {
 
     private final Object value;
-    private final int row;
 
-    public DistinctColumnItem(Object value, int row) {
+    public DistinctColumnItem(Object value) {
 	this.value = value;
-	this.row = row;
     }
 
     public Object getValue() {
 	return value;
-    }
-
-    public int getRow() {
-	return row;
     }
 
     @Override

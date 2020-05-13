@@ -200,4 +200,18 @@ public final class TableRowFilterSupport {
 
     }
 
+    public ITableFilter<?> getFilter() {
+	return filter;
+    }
+
+    public boolean isFiltered() {
+	for (int column = 0; column < filter.getTable().getModel().getColumnCount(); column++) {
+	    if (filter.isFiltered(column)) {
+		return true;
+	    }
+	}
+
+	return false;
+    }
+
 }

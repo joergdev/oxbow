@@ -57,15 +57,15 @@ public class TableAwareCheckListRenderer extends CheckListRenderer {
 	super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
 	// try to retrieve the text from table's cell renderer
-	if (value instanceof DistinctColumnItem) {
+	if (value instanceof DistinctColumnItem && table.getRowCount() > 0) {
 
 	    DistinctColumnItem item = (DistinctColumnItem) value;
-	    TableCellRenderer renderer = table.getCellRenderer(item.getRow(), column);
+	    TableCellRenderer renderer = table.getCellRenderer(0, column);
 
 	    try {
 
 		Component cmpt = renderer.getTableCellRendererComponent(table, item.getValue(), isSelected, hasFocus(),
-			item.getRow(), column);
+			0, column);
 
 		Method method = cmpt.getClass().getMethod("getText");
 		Object s = method.invoke(cmpt);

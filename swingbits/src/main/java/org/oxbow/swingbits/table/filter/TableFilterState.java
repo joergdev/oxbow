@@ -122,12 +122,16 @@ class TableFilterState implements Serializable {
 	    if (isEmpty(values)) {
 		continue; // no filtering for this column
 	    }
-	    if (!values.contains(new DistinctColumnItem(entry.getValue(col), 0))) {
+	    if (!values.contains(new DistinctColumnItem(entry.getValue(col)))) {
 		return false;
 	    }
 	}
 	return true;
 
+    }
+
+    public Set<Integer> getFilteredColumns() {
+	return data.keySet();
     }
 
 }

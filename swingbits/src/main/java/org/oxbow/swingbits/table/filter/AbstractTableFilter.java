@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -96,8 +97,34 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 		@Override
 		public void tableChanged(TableModelEvent e) {
 		    clearDistinctItemCache();
+
+		    for (Integer fCol : filterState.getFilteredColumns()) {
+			removeNonExistingFilterValues(fCol, filterState.getValues(fCol));
+		    }
 		}
 	    });
+	}
+    }
+
+    private void removeNonExistingFilterValues(Integer fCol, Collection<DistinctColumnItem> filterForCol) {
+	if (!filterForCol.isEmpty()) {
+	    Collection<DistinctColumnItem> columnItems = getDistinctColumnItems(fCol);
+
+	    Iterator<DistinctColumnItem> itFilterForCol = filterForCol.iterator();
+	    while (itFilterForCol.hasNext()) {
+		DistinctColumnItem colValueChecked = itFilterForCol.next();
+
+		if (!columnItems.contains(colValueChecked)) {
+		    itFilterForCol.remove();
+		}
+	    }
+
+	    // no more filtered
+	    if (columnItems.size() == filterForCol.size()) {
+		filterState.clear(fCol);
+
+		fireFilterChange();
+	    }
 	}
     }
 
@@ -114,7 +141,10 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 
     @Override
     public boolean apply(int col, Collection<DistinctColumnItem> items) {
+	removeNonExistingFilterValues(col, items);
+
 	setFilterState(col, items);
+
 	boolean result = false;
 	if (result = execute(col, items)) {
 	    fireFilterChange();
@@ -157,7 +187,7 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 	Set<DistinctColumnItem> result = new TreeSet<DistinctColumnItem>(); // to collect unique items
 	for (int row = 0; row < table.getModel().getRowCount(); row++) {
 	    Object value = table.getModel().getValueAt(row, column);
-	    result.add(new DistinctColumnItem(value, row));
+	    result.add(new DistinctColumnItem(value));
 	}
 	return result;
     }
