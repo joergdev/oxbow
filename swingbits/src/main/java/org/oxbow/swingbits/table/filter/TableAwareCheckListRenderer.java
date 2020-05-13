@@ -70,8 +70,28 @@ public class TableAwareCheckListRenderer extends CheckListRenderer {
 		Method method = cmpt.getClass().getMethod("getText");
 		Object s = method.invoke(cmpt);
 
+		if (s == null) {
+		    s = "";
+		}
+
 		if (s instanceof String) {
-		    setText((String) s);
+		    // if no text is set than maybe because a icon is shown, then try to get a
+		    // tooltiptext
+		    if (((String) s).trim().isEmpty()) {
+			Method methodIcon = cmpt.getClass().getMethod("getIcon");
+			Object icon = methodIcon.invoke(cmpt);
+
+			if (icon != null) {
+			    Method methodTooltip = cmpt.getClass().getMethod("getToolTipText");
+			    Object tt = methodTooltip.invoke(cmpt);
+
+			    if (tt instanceof String) {
+				setText((String) tt);
+			    }
+			}
+		    } else {
+			setText((String) s);
+		    }
 		}
 
 	    } catch (Throwable e) {
