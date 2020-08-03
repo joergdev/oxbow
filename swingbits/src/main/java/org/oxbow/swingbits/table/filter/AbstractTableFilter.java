@@ -35,6 +35,7 @@ import static org.oxbow.swingbits.util.CollectionUtils.*;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -132,6 +133,18 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 	distinctItemCache.clear();
     }
 
+    private void clearDistinctItemCacheAfterApply(int appliedColumn) {
+	for (Integer col : new ArrayList<Integer>(distinctItemCache.keySet())) {
+	    if (col != appliedColumn) {
+		distinctItemCache.remove(col);
+
+		if (isFiltered(col)) {
+		    collectDistinctColumnItems(col);
+		}
+	    }
+	}
+    }
+
     @Override
     public T getTable() {
 	return table;
@@ -147,8 +160,11 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 
 	boolean result = false;
 	if (result = execute(col, items)) {
+	    clearDistinctItemCacheAfterApply(col);
+
 	    fireFilterChange();
 	}
+
 	return result;
     }
 
@@ -187,9 +203,28 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 	Set<DistinctColumnItem> result = new TreeSet<DistinctColumnItem>(); // to collect unique items
 	for (int row = 0; row < table.getModel().getRowCount(); row++) {
 	    Object value = table.getModel().getValueAt(row, column);
-	    result.add(new DistinctColumnItem(value));
+
+	    if (isRowShowing(row, column)) {
+		result.add(new DistinctColumnItem(value));
+	    }
 	}
+
 	return result;
+    }
+
+    private boolean isRowShowing(int row, int sourceColumn) {
+	for (int col = 0; col < table.getModel().getColumnCount(); col++) {
+	    if (col != sourceColumn) {
+		Object val = table.getModel().getValueAt(row, col);
+
+		if (distinctItemCache.get(col) != null && isFiltered(col)
+			&& !filterState.getValues(col).contains(new DistinctColumnItem(val))) {
+		    return false;
+		}
+	    }
+	}
+
+	return true;
     }
 
     @Override
