@@ -38,6 +38,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -181,11 +182,11 @@ class TableFilterColumnPopup extends PopupWindow implements MouseListener {
 	JToolBar toolbar = new JToolBar();
 	toolbar.setFloatable(false);
 	toolbar.setOpaque(false);
-	toolbar.add(new PopupWindow.CommandAction(bundle.getString("Clear_ALL_COLUMN_FILTERS"),
+	toolbar.add(new PopupWindow.CommandAction(bundle.getString("Clear_COLUMN_FILTERS"),
 		new ImageIcon(getClass().getResource("funnel_delete.png"))) {
 	    @Override
 	    protected boolean perform() {
-		return clearAllFilters();
+		return clearFilterForColumn();
 	    }
 	});
 	commands.add(toolbar);
@@ -236,16 +237,24 @@ class TableFilterColumnPopup extends PopupWindow implements MouseListener {
 	    heightOverall += colDim.height;
 	}
 
+	if (maxWidth > 500) {
+	    maxWidth = 500; // max width
+	}
+
 	if (maxWidth > dim.width) {
 	    dim.width = maxWidth + 5;
+	} else if (dim.width > maxWidth && dim.width > 250) {
+	    dim.width = Math.max(maxWidth, 250);
 	}
 
 	if (heightOverall > dim.height) {
-	    if (heightOverall > 250) {
-		heightOverall = 250; // max heigth
+	    if (heightOverall > 350) {
+		heightOverall = 350; // max heigth
 	    }
 
 	    dim.height = heightOverall;
+	} else if (dim.height > heightOverall && dim.height > 150) {
+	    dim.height = Math.max(heightOverall, 150);
 	}
 
 	return dim;
@@ -259,8 +268,9 @@ class TableFilterColumnPopup extends PopupWindow implements MouseListener {
 	return true;
     }
 
-    private boolean clearAllFilters() {
-	filter.clear();
+    private boolean clearFilterForColumn() {
+	filter.apply(mColumnIndex, new ArrayList<DistinctColumnItem>());
+
 	return true;
     }
 

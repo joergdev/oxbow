@@ -99,7 +99,7 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 		public void tableChanged(TableModelEvent e) {
 		    clearDistinctItemCache();
 
-		    for (Integer fCol : filterState.getFilteredColumns()) {
+		    for (Integer fCol : new ArrayList<Integer>(filterState.getFilteredColumns())) {
 			removeNonExistingFilterValues(fCol, filterState.getValues(fCol));
 		    }
 		}
@@ -249,10 +249,14 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 
     public void clear() {
 	filterState.clear();
+
 	Collection<DistinctColumnItem> items = Collections.emptyList();
 	for (int column = 0; column < table.getModel().getColumnCount(); column++) {
 	    execute(column, items);
 	}
+
+	clearDistinctItemCacheAfterApply(-1);
+
 	fireFilterChange();
     }
 
