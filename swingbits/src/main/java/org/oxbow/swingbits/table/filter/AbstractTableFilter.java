@@ -119,18 +119,15 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 		    itFilterForCol.remove();
 		}
 	    }
-
-	    // no more filtered
-	    if (columnItems.size() == filterForCol.size()) {
-		filterState.clear(fCol);
-
-		fireFilterChange();
-	    }
 	}
     }
 
     private void clearDistinctItemCache() {
 	distinctItemCache.clear();
+
+	for (Integer filteredCol : filterState.getFilteredColumns()) {
+	    collectDistinctColumnItems(filteredCol);
+	}
     }
 
     private void clearDistinctItemCacheAfterApply(int appliedColumn) {
@@ -217,7 +214,7 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 	    if (col != sourceColumn) {
 		Object val = table.getModel().getValueAt(row, col);
 
-		if (distinctItemCache.get(col) != null && isFiltered(col)
+		if (!isEmpty(filterState.getValues(col))
 			&& !filterState.getValues(col).contains(new DistinctColumnItem(val))) {
 		    return false;
 		}
