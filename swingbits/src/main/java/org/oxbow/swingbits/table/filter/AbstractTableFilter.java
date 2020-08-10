@@ -125,8 +125,20 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
     private void clearDistinctItemCache() {
 	distinctItemCache.clear();
 
-	for (Integer filteredCol : filterState.getFilteredColumns()) {
-	    collectDistinctColumnItems(filteredCol);
+	Collection<Integer> filteredColumns = filterState.getFilteredColumns();
+	int posFilteredCol = 0;
+	boolean filteredColExisting = false;
+
+	for (Integer filteredCol : filteredColumns) {
+	    boolean lastFilteredCol = posFilteredCol == filteredColumns.size() - 1;
+
+	    getDistinctColumnItems(filteredCol, filteredColExisting || !lastFilteredCol);
+
+	    if (isFiltered(filteredCol)) {
+		filteredColExisting = true;
+	    }
+
+	    posFilteredCol++;
 	}
     }
 
@@ -136,7 +148,7 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 		distinctItemCache.remove(col);
 
 		if (isFiltered(col)) {
-		    collectDistinctColumnItems(col);
+		    collectDistinctColumnItems(col, true);
 		}
 	    }
 	}
@@ -185,23 +197,27 @@ public abstract class AbstractTableFilter<T extends JTable> implements ITableFil
 	}
     }
 
-    @Override
-    public Collection<DistinctColumnItem> getDistinctColumnItems(int column) {
+    private Collection<DistinctColumnItem> getDistinctColumnItems(int column, boolean collectOnlyIfRowShowing) {
 	Collection<DistinctColumnItem> result = distinctItemCache.get(column);
 	if (result == null) {
-	    result = collectDistinctColumnItems(column);
+	    result = collectDistinctColumnItems(column, collectOnlyIfRowShowing);
 	    distinctItemCache.put(column, result);
 	}
 	return result;
 
     }
 
-    private Collection<DistinctColumnItem> collectDistinctColumnItems(int column) {
+    @Override
+    public Collection<DistinctColumnItem> getDistinctColumnItems(int column) {
+	return getDistinctColumnItems(column, true);
+    }
+
+    private Collection<DistinctColumnItem> collectDistinctColumnItems(int column, boolean collectOnlyIfRowShowing) {
 	Set<DistinctColumnItem> result = new TreeSet<DistinctColumnItem>(); // to collect unique items
 	for (int row = 0; row < table.getModel().getRowCount(); row++) {
 	    Object value = table.getModel().getValueAt(row, column);
 
-	    if (isRowShowing(row, column)) {
+	    if (!collectOnlyIfRowShowing || isRowShowing(row, column)) {
 		result.add(new DistinctColumnItem(value));
 	    }
 	}

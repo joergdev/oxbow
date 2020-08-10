@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.joergdev</groupId>
     <artifactId>org.oxbow.swingbits</artifactId>
-    <version>1.2.1-FORK-JOERGDEV-1.4</version>
+    <version>1.2.1-FORK-JOERGDEV-1.5</version>
     <name>Oxbow Project</name>
     <description>A collection of useful components and utilities for Java Swing Toolkit</description>
     <url>https://github.com/eugener/oxbow</url>
