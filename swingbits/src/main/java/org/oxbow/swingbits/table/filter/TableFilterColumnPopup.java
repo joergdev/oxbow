@@ -58,6 +58,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumnModel;
 
@@ -78,10 +80,18 @@ class TableFilterColumnPopup extends PopupWindow implements MouseListener {
 	public Dimension preferredSize;
     }
 
+    ResourceBundle bundle = ResourceBundle.getBundle("task-dialog"); // NOI18N
+
     private boolean enabled = false;
 
     private final CheckList<DistinctColumnItem> filterList = new CheckList.Builder().build();
     private final JSearchTextField searchField = new JSearchTextField();
+    private final JButton btnApply = new JButton(new PopupWindow.CommandAction(bundle.getString("Apply")) {
+	@Override
+	protected boolean perform() {
+	    return applyColumnFilter();
+	}
+    });
 
     private final Map<Integer, ColumnAttrs> colAttrs = new HashMap<Integer, ColumnAttrs>();
     private int mColumnIndex = -1;
@@ -92,7 +102,6 @@ class TableFilterColumnPopup extends PopupWindow implements MouseListener {
     private IObjectToStringTranslator translator;
     private boolean actionsVisible = true;
     private boolean useTableRenderers = false;
-    ResourceBundle bundle = ResourceBundle.getBundle("task-dialog"); // NOI18N
 
     private Dimension currentlyPreferedSize;
 
@@ -192,13 +201,7 @@ class TableFilterColumnPopup extends PopupWindow implements MouseListener {
 	commands.add(toolbar);
 
 	commands.add(Box.createHorizontalGlue());
-
-	commands.add(new JButton(new PopupWindow.CommandAction(bundle.getString("Apply")) {
-	    @Override
-	    protected boolean perform() {
-		return applyColumnFilter();
-	    }
-	}));
+	commands.add(btnApply);
 	commands.add(Box.createHorizontalStrut(5));
 	commands.add(new JButton(new PopupWindow.CommandAction(bundle.getString("Cancel"))));
 	commands.setBorder(BorderFactory.createEmptyBorder(3, 0, 3, 0));
@@ -333,6 +336,19 @@ class TableFilterColumnPopup extends PopupWindow implements MouseListener {
 	DefaultCheckListModel<DistinctColumnItem> model = new DefaultCheckListModel<DistinctColumnItem>(distinctItems);
 	filterList.setModel(actionsVisible ? new ActionCheckListModel<DistinctColumnItem>(model) : model);
 	Collection<DistinctColumnItem> checked = filter.getFilterState(mColumnIndex);
+
+	filterList.getModel().addListDataListener(new ListDataListener() {
+
+	    public void intervalRemoved(ListDataEvent e) {
+	    }
+
+	    public void intervalAdded(ListDataEvent e) {
+	    }
+
+	    public void contentsChanged(ListDataEvent e) {
+		btnApply.setEnabled(filterList.getCheckedItems() != null && !filterList.getCheckedItems().isEmpty());
+	    }
+	});
 
 	// replace empty checked items with full selection
 	filterList.setCheckedItems(CollectionUtils.isEmpty(checked) ? distinctItems : checked);
